@@ -1,40 +1,38 @@
-
 import streamlit as st
 import requests
+import pandas as pd
 
-st.set_page_config(page_title="📋 Kobo Data Viewer")
+st.set_page_config(page_title="Kobo Data Viewer", layout="wide")
+
 st.title("📋 Kobo Data Viewer")
-st.markdown("Fetch live form data from KoboCollect.")
+st.markdown("Fetch live form data from KoboCollect (public forms only).")
 
-form_uid = st.text_input("Form UID", "a7FgXyQPmcAEbZxChPKyWF")
-username = st.text_input("Kobo Username", "imad479")
-password = st.text_input("Kobo Password", type="password")
+# User input: Form UID
+form_uid = st.text_input("Enter Kobo Form UID", value="", help="You can find this in the form URL or Kobo project settings.")
 
-@st.cache_data(show_spinner=False)
-def fetch_kobo_data(form_uid, username, password):
+# Display data when UID is provided
+if form_uid:
+    # Construct the public URL
     url = f"https://kc.kobotoolbox.org/api/v2/assets/{form_uid}/data.json"
+
     try:
-        response = requests.get(url, auth=(username, password))
+        response = requests.get(url)
         response.raise_for_status()
+
+        # Convert JSON to DataFrame
         data = response.json()
-        return data
+        df = pd.json_normalize(data['results'])
+
+        st.success("✅ Data fetched successfully!")
+        st.dataframe(df)
+
+        # Optional: Download option
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download CSV", data=csv, file_name="kobo_data.csv", mime="text/csv")
+
     except requests.exceptions.HTTPError as e:
-        st.error(f"HTTP Error: {e}")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Request Failed: {e}")
-    except ValueError as e:
-        st.error(f"JSON Decoding Failed: {e}")
-
-if st.button("Fetch Data"):
-    if not (form_uid and username and password):
-        st.warning("Please fill in all the fields.")
-    else:
-        st.info("Fetching data from KoboCollect...")
-        data = fetch_kobo_data(form_uid, username, password)
-        if data and "results" in data:
-            st.success(f"Fetched {len(data['results'])} records.")
-            st.dataframe(data['results'])
-        else:
-            st.warning("No data found or invalid credentials.")
-            
-
+        st.error(f"Failed to fetch Kobo data: {e}")
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
+else:
+    st.info("👈 Enter a valid Kobo Form UID to view data.")
