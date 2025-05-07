@@ -11,7 +11,7 @@ st.markdown("Live data fetched from a public KoboToolbox form.")
 form_uid = "a7FgXyQPmcAEbZxChPKyWF"  # Example UID — replace as needed
 
 # Construct public data URL
-url = f"https://kc.kobotoolbox.org/api/v2/assets/{form_uid}/data.json"
+url = f"https://kc.kobotoolbox.org/api/v2/assets/{form_uid}/data/"
 
 try:
     response = requests.get(url)
